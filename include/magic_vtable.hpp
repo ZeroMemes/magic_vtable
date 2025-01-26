@@ -74,8 +74,8 @@ namespace magic_vft
 	MAGIC_VTABLE_CONSTEVAL size_t vtable_index()
 	{
 		constexpr std::string_view mangled{__FUNCDNAME__};
-		constexpr auto first = mangled.find(MAGIC_VTABLE_PREFIX) + MAGIC_VTABLE_PREFIX.size();
-		constexpr auto last = mangled.find(MAGIC_VTABLE_SUFFIX, first);
+		constexpr auto first = mangled.rfind(MAGIC_VTABLE_PREFIX) + MAGIC_VTABLE_PREFIX.size();
+		constexpr auto last = mangled.rfind(MAGIC_VTABLE_SUFFIX, first);
 		constexpr auto value = detail::decode_microsoft_value(mangled.substr(first, last - first));
 		return value / sizeof(size_t);
 	}
