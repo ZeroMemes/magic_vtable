@@ -17,6 +17,15 @@
 	#error "Unsupported compiler"
 #endif
 
+#if defined(__cpp_consteval)
+	#define MAGIC_VTABLE_CONSTEVAL consteval
+#elif defined(__cpp_constexpr) && __cpp_constexpr >= 201304L
+	#define MAGIC_VTABLE_CONSTEVAL constexpr
+#else
+	#define MAGIC_VTABLE_CONSTEVAL inline
+#endif
+
+#include <stdexcept>
 #include <string_view>
 #include <utility>
 
@@ -24,28 +33,29 @@ namespace magic_vft
 {
 	namespace detail
 	{
-		consteval uint8_t parse_alphabet_encoded_hex(const char ch)
+		MAGIC_VTABLE_CONSTEVAL uint8_t parse_alphabet_encoded_hex(const char ch)
 		{
 			if (ch < 'A' || ch >= 'A' + 16)
 			{
-				std::unreachable();
+				throw std::invalid_argument{"invalid hex digit"};
 			}
 			return static_cast<uint8_t>(ch - 'A');
 		}
 
-		consteval size_t decode_microsoft_value(std::string_view str)
+		MAGIC_VTABLE_CONSTEVAL size_t decode_microsoft_value(std::string_view str)
 		{
+			using namespace std::literals::string_view_literals;
+
 			// weird cases that i'm not sure how to handle
-			if (str.starts_with("B3A"))
+			if (str.substr(0, 3) == "B3A"sv)
 				return 4;
-			if (str.starts_with("B7A"))
+			if (str.substr(0, 3) == "B7A"sv)
 				return 8;
 
 			// Skip the leading 'B'
 			if (str.front() != 'B')
 			{
-				// invoke UB to stop constexpr evaluation
-				std::unreachable();
+				throw std::invalid_argument{"unexpected character"};
 			}
 			str.remove_prefix(1);
 
@@ -61,7 +71,7 @@ namespace magic_vft
 	}
 
 	template<auto>
-	consteval size_t vtable_index()
+	MAGIC_VTABLE_CONSTEVAL size_t vtable_index()
 	{
 		constexpr std::string_view mangled{__FUNCDNAME__};
 		constexpr auto first = mangled.find(MAGIC_VTABLE_PREFIX) + MAGIC_VTABLE_PREFIX.size();
