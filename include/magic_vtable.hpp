@@ -4,15 +4,8 @@
 #define MAGIC_VTABLE_LIB
 
 #if defined(_MSC_VER)
-	// Prior to Clang 19.1.0, mangling of functions with NTTP member pointers was incompatible with MSVC 19.20+:
-	// https://releases.llvm.org/19.1.0/tools/clang/docs/ReleaseNotes.html#abi-changes-in-this-version
-	#if (_MSC_VER < 1920) || (defined(__clang__) && __clang_major__ < 19)
-		#define MAGIC_VTABLE_PREFIX std::string_view{"@@$"}
-		#define MAGIC_VTABLE_SUFFIX std::string_view{"@@"}
-	#else
-		#define MAGIC_VTABLE_PREFIX std::string_view{"1@$"}
-		#define MAGIC_VTABLE_SUFFIX std::string_view{"@@"}
-	#endif
+	#define MAGIC_VTABLE_PREFIX std::string_view{"@$B"}
+	#define MAGIC_VTABLE_SUFFIX std::string_view{"@@"}
 #else
 	#error "Unsupported compiler"
 #endif
@@ -47,17 +40,10 @@ namespace magic_vft
 			using namespace std::literals::string_view_literals;
 
 			// weird cases that i'm not sure how to handle
-			if (str.substr(0, 3) == "B3A"sv)
+			if (str.substr(0, 2) == "3A"sv)
 				return 4;
-			if (str.substr(0, 3) == "B7A"sv)
+			if (str.substr(0, 2) == "7A"sv)
 				return 8;
-
-			// Skip the leading 'B'
-			if (str.front() != 'B')
-			{
-				throw std::invalid_argument{"unexpected character"};
-			}
-			str.remove_prefix(1);
 
 			size_t value{};
 			while (!str.empty() && str.front() != '@')
